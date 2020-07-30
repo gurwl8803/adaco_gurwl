@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="adminBoardMapper">
+	
+	<select id="countByQuestion" resultType="int">
+		select count(*) from question
+		<where>
+			<if test="writer != null">and writer like '%' || #{writer} || '%'</if>
+			<if test="searchType != null">and state = #{searchType}</if>
+		</where>
+	</select>
+	
+	<select id = "countByNotice" resultType="int">
+		select count(*) from notice
+	</select>
+	
+	<select id="countByReport" resultType="int">
+		select count(*) from art_comments where report_cnt >= 1
+	</select>
+	
+	<select id = "findAllByReport" resultType="artComment">
+	   <![CDATA[
+	      select B.cno, B.username, B.content, B.write_date writeDate, B.report_cnt reportCnt
+	      from
+	         (select /*+ index_asc(art_comments art_comments_pk_cno) */ rownum rnum, A.cno, A.username, A.content, A.write_date, A.report_cnt
+	         from (
+	            select cno, username, content, write_date, report_cnt
+	            from art_comments
+	            order by report_cnt desc ) A
+	         where rownum <= #{endRowNum})B
+	      where B.rnum >= #{startRowNum}
+	   ]]>
+	</select>
+	
+	<delete id ="deleteByReport">
+		delete from art_comments where cno in
+		<foreach collection ="list" item ="item" index ="index" separator="," open="(" close=")">
+			#{item}
+		</foreach>
+	</delete>
+	
+	<delete id = "deleteByArt">
+		delete from art where artno = #{artno} and rownum = 1
+	</delete>
+	
+	<select id = "findAllByQuestion" resultType="question">
+		      select B.qno, B.writer, B.title, B.write_date writeDate, B.state
+		      from
+		         (select /*+ index_asc(question question_pk_qno) */ rownum rnum, A.qno, A.writer, A.title, A.write_date, A.state
+		         from (
+		            select qno, writer, title, write_date, state
+		            from question
+		           	<trim prefix="WHERE" prefixOverrides="AND|OR">
+					  	<if test="writer != null and writer != '' ">
+	                    	AND writer like '%' || #{writer} || '%'
+	                    </if>
+	                    <if test = "searchType != null">
+	                    	AND state = #{searchType}
+	                    </if>   
+           			</trim>
+		            order by write_date desc ) A
+		         where rownum&lt;= #{endRowNum})B
+		      where B.rnum&gt;= #{startRowNum}
+	</select>
+	
+	<select id="findQuestionById" resultType="question">
+		select qno, writer, answer, content, title, answer_content answerContent, write_date writeDate, answer_date answerDate, state
+		from question where qno = #{qno} and rownum = 1
+	</select>
+			
+	<update id = "updateQuestionByAnswer">
+		update question set answer_content = #{answerContent}, answer = #{answer}, answer_date = sysdate, state = #{state}
+		where qno = #{qno} and rownum = 1
+	</update>
+	
+	<insert id = "insertByQuestion">
+		<selectKey keyProperty="qno" resultType="int" order="BEFORE">
+			select question_seq.nextval from dual
+		</selectKey>
+		insert into question(qno, writer, content, title, write_date, state)
+		values(#{qno}, #{writer}, #{content}, #{title}, #{writeDate}, #{state} )
+	</insert>
+	
+	<select id="findAllByNotice" resultType="notice">
+			select B.noticeno, B.title, B.write_date writeDate, B.writer, B.is_important isImportant
+					from
+		    		(select /*+ index_asc(notice notice_pk_noticeno) */ rownum rnum, A.noticeno, A.title, A.write_date, A.writer, A.is_important
+		         	from (
+		            	select noticeno, title, write_date, writer, is_important
+		            	from notice
+		            	order by is_important desc, write_date desc ) A
+		         	where rownum&lt;= #{endRowNum})B
+		      	where B.rnum&gt;= #{startRowNum}
+	</select>
+	
+	<select id="findNoticeById" resultType="notice">
+		select noticeno, content, title, write_date writeDate, writer, is_important isImportant, attachment_cnt attachmentCnt
+		from notice where noticeno = #{noticeno} and rownum = 1
+	</select>
+	
+	<insert id = "insertByNotice">
+		<selectKey keyProperty="noticeno" resultType="int" order="BEFORE">
+			select notice_seq.nextval from dual
+		</selectKey>
+		insert into notice(noticeno, content, title, write_date, writer, is_important, attachment_cnt) values(#{noticeno}, #{content}, #{title}, sysdate, #{writer}, #{isImportant}, ${attachmentCnt})
+	</insert>
+	
+	<update id = "updateByNotice">
+		update notice
+		<trim suffixOverrides="," prefix="SET">
+			<if test="title != null">title = #{title},</if>
+			<if test="content != null">content = #{content},</if>
+			<if test="isImportant != null">is_important = #{isImportant},</if>
+		</trim>
+		where noticeno = #{noticeno}
+	</update>
+	
+	<delete id="deleteByNotice">
+		delete from notice where noticeno = #{noticeno} and rownum = 1
+	</delete>
+	
+	<insert id="insertByFAQ">
+		<selectKey keyProperty="faqno" resultType="int" order="BEFORE">
+			select faq_seq.nextval from dual
+		</selectKey>
+		insert into faq(faqno, title, content) values(#{faqno}, #{title}, #{content})
+	</insert>
+	
+	<select id="findAllByFAQ" resultType="faq">
+		select faqno, title, content from faq
+	</select>
+	
+	<select id="findFAQById" resultType="faq">
+		select faqno, title, content from faq where faqno = #{faqno} and rownum = 1
+	</select>
+	
+	<update id = "updateByFAQ">
+		update faq
+		<trim suffixOverrides="," prefix="SET">
+			<if test="title != null">title = #{title},</if>
+			<if test="content != null">content = #{content},</if>
+		</trim>
+		where faqno = #{faqno}
+	</update>
+	
+	<delete id="deleteByFAQ">
+		delete from faq where faqno = #{faqno} and rownum = 1
+	</delete>
+	
+	<select id="findAllByCategory" resultType="category">
+		select category from category
+	</select>
+	
+	<insert id = "insertByCategory">
+		insert into category(category) values(#{category})
+	</insert>
+	
+	<update id="updateByCategory">
+		update category set category = #{category} and rownum = 1
+	</update>
+	
+	<delete id = "deleteByCategory">
+		delete from category where category = #{category} and rownum = 1
+	</delete>
+	
+	<select id = "countMessageById" resultType="int">
+		select count(*) from message where recipient_id = #{recipientId}
+	</select>
+	
+	<select id = "countNoReadMessageById" resultType="int">
+		select count(*) from message where recipient_id = #{recipientId} and msg_check = 0
+	</select>
+</mapper>

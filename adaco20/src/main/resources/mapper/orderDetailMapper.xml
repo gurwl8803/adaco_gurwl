@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="orderDetailMapper">
+
+	<!-- 결제 하기 -->
+	<insert id="Payment">
+		insert into order_detail(orderno,optno, artno,artistno,art_name, option_name,
+		option_value, amount,price, address, recipient,tel,email,
+			request,add_point,refund_account ,is_shipping , orderstate)
+			values(#{orderno},#{optno}, #{artno},#{artistno}, #{artName},#{optionName},#{optionValue},#{amount},#{price},
+			#{address},#{recipient},#{tel},#{email},#{request},#{addPoint},#{refundAccount},0,#{orderstate})
+	</insert>
+	<select id="findArtnoByOrderDetail" resultType="orderDetail">
+	select orderno,optno, artno,artistno,art_name artName, option_name optionName,
+		option_value optionValue, amount,price, address, recipient,tel,email,
+			request,add_point addPoint, postalcode,refund_account refundAccount,is_shipping, orderstate orderstate 
+			from order_detail where art_name=#{artName} and rownum =1
+	</select>
+	<!-- 오더번호로 디테일찾기 -->
+	<select id="findByOrdernoOrderDetail" resultType="orderDetail">
+		select orderno,optno, artno,artistno,art_name artName, option_name optionName,
+		option_value optionValue, amount,price, address, recipient,tel,email,
+			request,add_point addPoint, postalcode,refund_account refundAccount,is_shipping, orderstate orderstate
+			from order_detail where orderno=#{orderno} and rownum =1
+	</select>
+	
+	<!--주문 상세 -->
+	<select id="OrderDetail" resultType="orderDetail">
+	select orderno,optno, artno,artistno,art_name artName, option_name optionName,
+		option_value optionValue, amount,price, address, recipient,tel,email,
+			request,add_point addPoint, postalcode,refund_account refundAccount,is_shipping, orderstate orderstate
+			from order_detail where orderno=#{orderno} and rownum =1
+	</select>
+	<select id="findByArtnameArtImage" resultType="string">
+	select main_img mainImg from art where art_name=#{artName}
+	</select>
+	
+
+	<!-- 작가전용 -->
+	<!-- 작가번호로 주문찾기 -->
+	<select id="orderFindByArtistno" resultType="int">
+		select orderno from order_detail where artistno=#{artistno}	
+	</select>
+	
+ 	<!-- 작가번호로 주문리스트 --> 
+ <!-- 작가번호로 주문리스트 -->
+<!-- 	<select id="findAllOrderByArtist" resultType="orderDetail"> -->
+<!-- 		<![CDATA[ -->
+<!-- 			select * from		 -->
+<!-- 				(select rownum as rnum ,o.*from -->
+<!-- 					(select /*+ index_desc(orders orders_pk_orderno)*/orderno, artno, optno, price, recipient,artistno, art_name artName, option_Name optionName, option_value optionValue, orderstate orderstate from order_detail ) o -->
+<!-- 					where artistno=#{artistno} and rownum <=#{endRowNum} order by orderno desc) -->
+<!-- 			where rnum>=#{startRowNum} -->
+<!-- 			]]> -->
+<!-- 	</select> -->
+				
+	
+	<!-- 주문상태로 검색도 해야됨 --> 
+	<select id="findAllOrderByArtist" resultType="orderDetail">
+		select B.orderno, B.artno, B.optno, B.price, B.recipient, B.artistno, B.art_name artName, B.option_Name optionName, B.option_value optionValue, B.orderstate 
+	      from
+	         (select /*+ index_desc(orders orders_pk_orderno) */ rownum rnum, A.orderno, A.artno, A.optno, A.price, A.recipient, A.artistno, A.art_name, A.option_Name, A.option_value, A.orderstate 
+	         from (
+	            select orderno, artno, optno, price, recipient,artistno, art_name, option_Name, option_value, orderstate 
+	            from order_detail
+	            <trim prefix="WHERE" prefixOverrides="AND">
+	            	<if test="orderstate!=null and orderstate != '' ">
+	            		AND orderstate like '%'|| #{orderstate} || '%' 
+	            	</if>
+	            </trim>
+	       		order by orderno desc) A
+	         where artistno=#{artistno} and rownum&lt;= #{endRowNum})B
+	      where B.rnum&gt;= #{startRowNum}
+	</select>
+
+	<!-- 주문 count / 페이징 위한 --> 
+	<select id="count" resultType="int">
+		select count(*) from order_detail
+	</select>
+	
+	<!-- 주문상태로 검색한 주문 수 -->
+	<select id="countSearchByState" resultType="int">
+	   	select count(*)
+	   	from order_detail
+	   	<where>
+	   		<if test="orderstate!=null">and orderstate like '%'|| #{orderstate} || '%'</if>
+	   	</where> 	
+	</select> 
+	
+	<!-- 주문상태 업데이트 -->
+	<update id="update">
+		update order_detail set orderstate=#{orderstate}
+		where orderno=#{orderno} and rownum=1 
+	</update>
+	
+</mapper>

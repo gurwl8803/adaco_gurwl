@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="adminUserMapper">
+	
+	<select id = "countByUser" resultType="int">
+		select count(*) from users
+		<where>
+			<if test="username != null and username != ''">and username like '%' || #{username} || '%'</if>
+		</where>
+	</select>
+	
+	<select id = "countByArtist" resultType="int">
+		select count(*) from artist
+		<where>
+			<if test="username != null and username != ''">and username = #{username}</if>
+		</where>
+	</select>
+	
+	<select id="findAllByUser" resultType="user">
+	      select B.username, B.irum, B.email, B.join_date joinDate
+	      from
+	         (select /*+ index_asc(users users_pk_username) */ rownum rnum, A.username, A.irum, A.email, A.join_date
+	         from (
+	            select username, irum, email, join_date
+	            from users
+	            <trim prefix="WHERE" prefixOverrides="AND|OR">
+				  	<if test="username != null and username != '' ">
+                    	AND username like '%' || #{username} || '%'
+                    </if>   
+           		</trim>
+	            order by username asc ) A
+	         where rownum&lt;= #{endRowNum})B
+	      where B.rnum&gt;= #{startRowNum}
+	</select>
+
+	<select id = "findAllByArtist" resultType="map">
+		select B.username, B.irum, B.email, B.artistno
+	    	from
+	       		(select /*+ index_asc(artist artist_pk_artistno) */ rownum rnum, A.username, A.irum, A.email, A.artistno
+	         	from (
+		            select a.username, u.irum, u.email, a.artistno
+		            from users u, artist a
+	                <trim prefix="WHERE" prefixOverrides="AND|OR">
+	                	AND a.username = u.username
+	                	<if test="username != null and username != '' ">
+	                		AND u.username = #{username}
+	                	</if>
+	                </trim>
+	                group by a.username, u.irum, u.email, a.artistno
+ 		            order by username asc ) A
+ 		    <![CDATA[
+	         	where rownum <= #{endRowNum})B
+	      	where B.rnum >= #{startRowNum}
+	      	]]>
+	</select>
+		
+	<select id="findById" resultType="user">
+		select username,password,email,irum,tel,profile,address,join_date joinDate,birth_date birthDate, enabled
+		from users where username=#{username} and rownum=1
+	</select>
+	
+	<update id= "updateByUser">
+		update users set enabled = #{enabled} where username = #{username} and rownum = 1
+	</update>
+	
+	<select id="findOrderById" resultType="string">
+		select d.orderstate from orders o, order_detail d
+		where o.orderno = d.orderno and username = #{username}
+	</select>
+	
+	<select id="findSellById" resultType="string">
+		select orderstate from order_detail d, artist a
+		where a.artistno = d.artistno and username = #{username}
+	</select>
+	
+	<select id = "existsByArtist" resultType="boolean">
+		select count(*) from artist where username = #{username} and rownum = 1
+	</select>
+	
+	<select id="findAuthorityById" resultType="authorities">
+		select username, authority from authorities where username = #{username}
+	</select>
+	
+	<insert id="insertByArtist">
+		<selectKey keyProperty="artistno" resultType="int" order="BEFORE">
+			select artist_seq.nextval from dual
+		</selectKey>
+		insert into artist(artistno,username)
+		values(#{artistno},#{username})
+	</insert>
+	
+	<select id="findAuthority" resultType="string">
+		select distinct authority from authorities
+	</select>
+	
+	<select id="findByArtist" resultType="artist">
+		select artistno, username from artist where username = #{username}
+	</select>
+	
+	<delete id="deleteByArtist">
+		delete from artist where artistno = #{artistno} and rownum = 1
+	</delete>
+	
+	<select id="findProfileByArtistno" resultType="string">
+		select profile from users
+   		 where username = 
+    		(select username from artist where artistno = #{artistno})
+	</select>
+ </mapper>

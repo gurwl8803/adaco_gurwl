@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="userMapper">
+	<select id ="existsUsername" resultType="string">
+		select username from users where username=#{username} and rownum=1
+	</select>
+	<select id="existsEmail" resultType="string">
+		select email from users where email=#{email} and rownum=1
+	</select>
+	<insert id="insert" parameterType="user">
+	insert into users(username,email,irum,join_date,birth_date,tel,password,profile,address,enabled,check_code,login_failure_cnt)
+	values(#{username},#{email},#{irum},sysdate,#{birthDate},#{tel},#{password},#{profile},#{address,jdbcType=VARCHAR},0,#{checkCode,jdbcType=VARCHAR},0)
+	</insert>
+	<select id="findidByCheckTel" resultType="string">
+		select irum from users where tel=#{tel} and rownum=1
+	</select>
+	<select id="findidByCheckName" resultType="string">
+		select username from users where irum=#{irum} and rownum=1		
+	</select>
+	<select id="findidByCheckEmail" resultType="string">
+		select username from users where email=#{email} and rownum=1
+	</select>
+	<select id="findById" resultType="user">
+		select username,password,email,irum,tel,profile,address,join_date joinDate,birth_date birthDate,login_failure_cnt loginFailureCnt
+		from users where username=#{username} and rownum=1
+	</select>
+	<update id="update">
+		update users
+		<trim suffixOverrides="," prefix="set" >
+			<if test="password!=null">password=#{password},</if>	
+			<if test="email!=null">email=#{email},</if>
+			<if test="profile!=null">profile=#{profile},</if>
+			<if test="address!=null">address=#{address},</if>
+			<if test="tel!=null">tel=#{tel},</if>
+			<if test="enabled!=null">enabled=#{enabled},</if>
+			<if test="checkCode!=null">check_code=null,</if>
+			<if test="loginFailureCnt!=null">login_failure_cnt=#{loginFailureCnt}</if>
+		</trim>
+		where username=#{username} and rownum=1
+	</update>
+	<select id="findAllByPoint" resultType="point">
+		select point,start_date startDate 
+		,end_date endDate,username from point where username=#{username} order by start_date desc 
+	</select>
+	<insert id="insertpoint">
+		insert into point(point,start_date,end_date,username)
+		values(#{point},sysdate,#{endDate},#{username})
+	</insert>	
+	<select id="findByPoint" resultType="point">
+		select point,start_date startDate 
+		,end_date endDate,username from point
+	</select>
+	<delete id="deletePoint">
+		delete from point where username=#{username}
+	</delete>
+	<select id="findJoinCheckCode" resultType="string">
+		select username from users where check_code=#{checkCode} and rownum=1
+	</select>
+	<select id="findAllFavorite" resultType="favorite">
+		select favno,artno,username,price,art_name artName from favorite where username=#{username} order by favno desc
+	</select>
+	<insert id="insertFavorite">
+		<selectKey keyProperty="favno" resultType="int" order="BEFORE">
+			select favorite_seq.nextval from dual
+		</selectKey>
+		insert into favorite(favno,artno,username,price,art_name)
+		values(#{favno},#{artno},#{username},#{price},#{artName})
+	</insert>
+	<select id = "count" resultType="string">
+		select count(*) from favorite where username=#{username}	
+	</select>
+	<select id = "listByReviewUser" resultType="review">
+		select rno,content,artno,username from review where username=#{username} order by artno asc
+	</select>
+	<select id="findByFavoriteId" resultType="favorite">
+		select favno,artno,username,art_name artName,price from favorite where favno = #{favno}
+	</select>
+	<select id="findByusernameFavoriteId" resultType="favorite">
+		select favno,artno,username,art_name artName,price from favorite where  username=#{username}
+	</select>
+	<delete id="deleteFavorite">
+		delete from favorite where favno=#{favno} and rownum=1
+	</delete>
+	<delete id="delete">
+		delete from users where username=#{username} and rownum=1
+	</delete>
+	<delete id="reviewDelete">
+		delete from review where rno=#{rno} and rownum=1
+	</delete>
+	<select id="countUsername" resultType="string">
+		select count(*) from review where username=#{username}
+	</select>
+	<select id="findAllIrum" resultType="string">
+		select irum from users
+	</select>
+	<select id="TotalPoint" resultType="int">
+		select sum(point) from point where username = #{username}
+	</select>	
+		<select id="findByArtnoFavoriteId" resultType="favorite">
+		select favno, artno, username, art_name artName, price from favorite where artno = #{artno} and username = #{username}
+	</select>
+	<select id="existsByFavorite" resultType="boolean">
+		select count(*) from favorite where username = #{username} and artno = #{artno}
+	</select>
+	<select id="passwordFindUsername" resultType="string">
+		select password from users where username=#{username}	
+	</select>
+<!-- 	유저네임으로 디테일 오더번호 찾기 -->
+	<select id="OrdernoFindByUsername" resultType="order">
+		select orderno,order_date orderDate,shipping_charge shippingCharge from orders where username = #{username}
+	</select>
+	<!-- 작가 사용 -->
+	<!--username으로 이름 찾기  -->
+	<select id="irumByUsername" resultType="String">
+		select irum from users where username=#{username}
+	</select>
+</mapper>
+

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="artMapper">
+	
+	<!-- 작가 사용 -->
+	<!-- 작품 등록 -->	
+	<insert id="insert">
+	<selectKey keyProperty="artno" resultType="int" order="BEFORE">
+		select art_seq.nextval from dual
+	</selectKey>
+		insert into art(artno, art_name, price, main_img, art_img, stock, tag, art_date, category, shopno, couri_price, return_address, courier, accumulated, favorite_cnt, artistno, art_detail, read_cnt, review_cnt, art_comment_cnt )
+		values(#{artno},#{artName},#{price, jdbcType=INTEGER},#{mainImg},#{artImg, jdbcType=VARCHAR},#{stock, jdbcType=VARCHAR}, #{tag}, sysdate, #{category}, #{shopno}, #{couriPrice, jdbcType=INTEGER}, #{returnAddress, jdbcType=VARCHAR}, #{courier, jdbcType=VARCHAR}, #{accumulated, jdbcType=INTEGER}, 0, #{artistno}, #{artDetail, jdbcType=VARCHAR},0,0,0)
+	</insert>
+<!-- 장바구니에서 작품보기 -->
+	<select id="list" resultType="art">
+		select artno, art_name artName, price,main_img mainImg from art 
+	</select>
+	
+	<select id="findArtByUsername" resultType="art">
+		select artno, art_name artName, price,main_img mainImg from art where artistno=#{artistno} 
+	</select>
+	
+	<!-- 작품 리스트(최신순) / 카테고리로 검색 리스트-->
+	<select id="findAll" resultType="art">
+		select B.artno, B.category, B.main_img mainImg, B.art_name artName, B.price, B.art_date artDate, B.artistno
+	      from
+	         (select /*+ index_desc(art art_pk_artno) */ rownum rnum, A.artno, A.category, A.main_img, A.art_name, A.price, A.art_date, A.artistno
+	         from (
+	            select artno, category, main_img, art_name, price, art_date, artistno
+	            from art
+	            <trim prefix="WHERE" prefixOverrides="AND">
+	            	<if test="category!=null and category != '' ">
+	            		AND category like '%'|| #{category} || '%' 
+	            	</if>
+	            </trim>
+	       		order by artno desc) A
+	         where artistno=#{artistno} and rownum&lt;= #{endRowNum})B
+	      where B.rnum&gt;= #{startRowNum}
+	</select>
+	
+	<!-- 카테고리로 검색한 작품 수 -->
+	<select id="countSearchByCategory" resultType="int">
+	   	select count(*)
+	   	from art 
+	   	<where>
+	   		<if test="category!=null">and category like '%'|| #{category} || '%'</if>
+	   		<if test="artistno!=null">and artistno=#{artistno}</if>
+	   	</where> 	
+	</select>
+	
+	<!-- 아티스트번호 기준으로 작품 수 -->
+	<select id="countByArtistno" resultType="int">
+		select count(*) from art where artistno=#{artistno}
+	</select>
+	
+	<select id="findAllByArtno" resultType="art">
+		select artno, category, main_img mainImg, art_name artName, price
+		from art where artno = #{artno}
+	</select>
+	<!-- 작품 삭제 -->
+	<delete id="delete">
+		delete from art where artno=#{artno} and rownum=1
+	</delete>
+	
+	<!-- 작품 상세 보기 -->
+	<select id="findById" resultType="art">
+		select artno, art_name artName, price, main_img mainImg , art_img artImg , stock, tag, art_date artDate, category, shopno, couri_price couriPrice, return_address returnAddress, courier, read_cnt readCnt, accumulated, favorite_cnt favoriteCnt, artistno, art_detail artDetail
+		from art
+		where artno=#{artno} and rownum=1
+	</select>
+	
+	<!--작품 수정 / 작품 번호,카테고리 수정불가 / 작가,회원 같이 사용-->
+	<update id="update">
+		update art
+		<trim suffixOverrides="," prefix="set">
+			<if test="artName!=null">art_name=#{artName},</if>
+			<if test="price!=null">price=#{price},</if>
+			<if test="mainImg!=null">main_img=#{mainImg},</if>
+			<if test="artImg!=null">art_img=#{artImg},</if>
+			<if test="stock!=null">stock=#{stock},</if>
+			<if test="tag!=null">tag=#{tag},</if>
+			<if test="couriPrice!=null">couri_price=#{couriPrice},</if>
+			<if test="courier!=null">courier=#{courier},</if>
+			<if test="readCnt!=null">read_cnt=read_cnt+1,</if>
+			<if test="reviewCnt!=null">review_cnt=review_cnt+1,</if>
+			<if test="artCommentCnt!=null">art_comment_cnt=art_comment_cnt+1,</if>
+			<if test="accumulated!=null">accumulated=#{accumulated},</if>
+			<if test="favoriteCnt!=null">favorite_cnt=favorite_cnt+1,</if>
+			<if test="artDetail!=null">art_detail=#{artDetail},</if>
+		</trim>
+		where artno=#{artno} and rownum=1
+	</update>
+	
+ 	<!-- 작품 count / 페이징 위한 --> 
+	<select id="count" resultType="int">
+		select count(*) from art
+	</select>
+	
+	<!-- 회원 사용 -->
+	
+	<!-- 작품 리스트(최신순) / 작품이름으로 검색 리스트-->
+	<select id="findAllFromUser" resultType="art">
+		select B.artno, B.art_name artName, B.main_img mainImg, B.price, B.favorite_cnt favoriteCnt, B.category, B.tag
+	      from
+	         (select /*+ index_desc(art art_pk_artno) */ rownum rnum, A.artno, A.art_name, A.main_img, A.price, A.favorite_cnt, A.category, A.tag
+	         from (
+	            select artno, art_name, main_img, price, favorite_cnt, category, tag
+	            from art
+	            <trim prefix="WHERE" prefixOverrides="AND">
+	            	<if test="artName!=null and artName != '' ">
+	            		AND art_name like '%'|| #{artName} || '%' 
+	            	</if>
+	            	<if test="category!=null and category != '' ">
+	            		AND category like '%'|| #{category} || '%'
+	            	</if>
+<!-- 	            	<if test="tag!=null and tag != '' "> -->
+<!-- 	            		AND tag like '%'|| #{tag} || '%' -->
+<!-- 	            	</if> -->
+	            </trim>
+	       		order by artno desc) A
+	         where rownum&lt;= #{endRowNum})B
+	      where B.rnum&gt;= #{startRowNum}
+	</select>
+
+	<!-- 작품이름으로 검색한 작품 수(카테고리 포함) -->
+	<select id="countSearchByArtNameCG" resultType="int">
+	   	select count(*)
+	   	from art 
+	   	<where>
+	   		<if test="artName!=null">and art_name like '%'|| #{artName} || '%'</if>
+	   		<if test="category!=null">and category like '%'|| #{category} || '%'</if>
+	   	</where> 	
+	</select> 
+	
+	<!-- 작품이름으로 검색한 작품 수 -->
+	<select id="countSearchByArtName" resultType="int">
+	   	select count(*)
+	   	from art 
+	   	<where>
+	   		<if test="artName!=null">and art_name like '%'|| #{artName} || '%'</if>
+	   	</where> 	
+	</select> 
+	
+	<!-- 작품 리스트(리뷰 많은 순 정렬) -->
+	<select id="reviewManyByArt" resultType="art">
+	      select B.artno, B.art_name artName, B.main_img mainImg, B.price, B.favorite_cnt favoriteCnt, B.review_cnt reviewCnt
+	      from
+	         (select /*+ index_desc(art art_pk_artno) */ rownum rnum, A.artno, A.art_name, A.main_img, A.price, A.favorite_cnt, A.review_cnt
+	         from (
+	            select artno, art_name, main_img, price, favorite_cnt, review_cnt
+	            from art
+	            <trim prefix="WHERE" prefixOverrides="AND">
+	            	<if test="artName!=null and artName != '' ">
+	            		AND art_name like '%'|| #{artName} || '%' 
+	            	</if>
+	            </trim>
+	       		order by review_cnt desc) A
+	         where rownum&lt;= #{endRowNum})B
+	      where B.rnum&gt;= #{startRowNum}
+	</select>
+
+	<!-- 리뷰 많은 순 개수 / 페이징 위한 -->
+<!-- 	<select id="countReviewByArt" resultType="int"> -->
+<!-- 	   	select count(*) -->
+<!-- 	   	from art  -->
+<!-- 	   	order by review_cnt desc -->
+<!-- 	</select> * -->
+	
+	<!-- 작품 상세 보기 -->
+	<select id="findByArtFromUser" resultType="art">
+		select artno, art_name artName, price, main_img mainImg , art_img artImg , stock, tag, category, shopno, 
+		couri_price couriPrice, return_address returnAddress, courier, read_cnt readCnt, accumulated, favorite_cnt favoriteCnt, 
+		artistno, art_detail artDetail, art_comment_cnt artCommentCnt,review_cnt reviewCnt
+		from art
+		where artno=#{artno} and rownum=1
+	</select>
+	
+	<!-- 작품 이미지 출력 -->
+	<select id="findAllArtImg" resultType="com.icia.adaco.entity.ArtImg">
+		select imgno, artno, gyungro from art_image where artno = #{artno}
+	</select>
+	
+	<!-- 작품 이미지 추가 -->
+	<insert id="insertArtImg">
+		<selectKey keyProperty="imgno" resultType="int" order="BEFORE">
+			select art_image_seq.nextval from dual
+		</selectKey>
+		insert into art_image(imgno, artno, gyungro) values(#{imgno}, #{artno}, #{gyungro})
+	</insert>
+	
+	<!-- 작품 이미지 변경 -->
+	<update id="updateArtImg">
+		update art_image set gyungro=#{gyungro} where artno=#{artno} 
+	</update>
+	
+	<!-- 상점 사용 --> 
+	<select id="findAllArtImgByShopno" resultType="String">
+		select main_img mainImg from art where shopno=#{shopno}
+	</select>
+	
+	<select id="findAllArtnoByShopno" resultType="int">
+		select artno from art where shopno=#{shopno}
+	</select>
+	
+	<select id="findArtistnoByArtno" resultType="int">
+		select artistno from art where artno=#{artno}
+	</select>
+	
+	<select id="findArtnoByArtstno" resultType="int">
+		select artno from art where artistno=#{artistno}
+	</select>
+	
+	
+	<!-- 작가 사용 -->
+	<select id="findArtnoByArtistno" resultType="int">
+		select artno from art where artistno=#{artistno}
+	</select>
+	
+ </mapper>
